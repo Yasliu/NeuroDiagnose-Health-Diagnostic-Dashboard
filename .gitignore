@@ -1,6 +1,5 @@
 chest_xray/
 chest_xray.zip
-models/
 __pycache__/
 *.pyc
 .ipynb_checkpoints
