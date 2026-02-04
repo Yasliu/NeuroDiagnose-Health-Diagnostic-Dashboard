@@ -1,5 +1,5 @@
 chest_xray/
-chest_xray.zip
+brain_tumour_classification/
 __pycache__/
 *.pyc
 .ipynb_checkpoints

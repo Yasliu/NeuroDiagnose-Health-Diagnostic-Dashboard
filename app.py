@@ -3,6 +3,7 @@ import numpy as np
 import tensorflow as tf
 import joblib 
 from PIL import Image
+from tensorflow.keras.applications.resnet50 import preprocess_input
 
 # 1. Page Configuration
 st.set_page_config(page_title="NeuroDiagnose", page_icon="🏥", layout="wide")
@@ -37,6 +38,12 @@ def page_home():
         st.write("Diabetes risk assessment using patient vitals.")
         if st.button("Go to Endocrinology (Diabetes)"):
             st.session_state['page'] = 'diabetes'
+            st.rerun()
+        
+        st.info("🧠 **Neurology**")
+        st.write("Brain Tumor detection using MRI scans.")
+        if st.button("Go to Neurology (Brain Tumor)"):
+            st.session_state['page'] = 'brain_tumor'
             st.rerun()
     
     with col2:
@@ -171,7 +178,98 @@ def page_radiology():
 
                 st.progress(int((1-probability)*100))
             
+
+
+# ------------------------------------
+# 🧠 Neurology
+# ------------------------------------
+
+@st.cache_resource
+def load_brain_tumor_model():
+    return tf.keras.models.load_model(
+        "models/brain_tumor.h5",
+        custom_objects={
+            'preprocess_input': preprocess_input
+        })
+
+def page_brain_tumor():
+    st.title("🧠 Neurology Department")
+    st.caption("Brain Tumor Detection System")
+
+    st.warning("NOTE: AI MODEL IS NOT 100% CORRECT, PLEASE CONSULT A DOCTOR")
+    
+    st.info("Please upload a Brain MRI (JPEG/PNG)")
+    
+    try:
+        brain_tumor_model = load_brain_tumor_model()
+    except Exception as e:
+        st.error(f"Failed to load Brain Tumor model: {str(e)}")
+        return
+    
+    uploaded_file = st.file_uploader("Upload Brain MRI", type=["jpg", "png", "jpeg"])
+
+    if uploaded_file is not None:
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.image(uploaded_file, caption="Uploaded Brain MRI", width=250)
+
+        with col2:
+            st.write("Analyzing image...")
+
+            # --- IMAGE PROCESSING --- 
+            img = Image.open(uploaded_file)
+
+            img = img.convert('RGB') # RGB due to 3 channels
+
+            #Addition of TTA ----------
+            img_1 = img.resize((224, 224))
+            arr_1 = np.array(img_1)
+
+            # -- Image B: Fliped left-right
+            img_2 = img_1.transpose(Image.FLIP_LEFT_RIGHT)
+            arr_2 = np.array(img_2)
+
+            # --- Image C: Slight Zoom
+            width, height = img_1.size
+            left = width * 0.1
+            top = height * 0.1
+            right = width * 0.9
+            bottom = height * 0.9
+
+            img_3 = img_1.crop((left, top, right, bottom)).resize((224, 224))
+            arr_3 = np.array(img_3)
+
+            batch_input = np.stack([arr_1, arr_2, arr_3])
+
+            # --- PREDICTION ENGINE ---
+            prediction = brain_tumor_model.predict(batch_input)
+
+            avg_prediction = np.mean(prediction, axis=0)
             
+            class_index = np.argmax(avg_prediction)
+            confidence = np.max(avg_prediction)
+
+            class_names = ["Glioma", "Meningioma", "No Tumor", "Pituitary"]
+            result = class_names[class_index]
+
+            st.divider()
+
+
+
+            if result == "No Tumor":
+                st.success(f"✅ **{result}** Detected")
+                st.write(f"Confidence: {confidence:.2%}")
+                st.progress(int(confidence*100))
+            else:
+                st.error(f"⚠️ **{result}** Detected")
+                st.write(f"Confidence: {confidence:.2%}")
+                st.progress(int(confidence*100))
+
+                with st.expander("See Probability Distribution"):
+                    st.write(dict(zip(class_names, avg_prediction)))
+            
+
 
 # ------------------------------------
 # 🧭 MAIN ROUTER & SIDEBAR
@@ -190,8 +288,8 @@ def main():
         # We use a radio button for cleaner switching than a dropdown
         page_selection = st.radio(
             "Go to:",
-            ["Home", "Endocrinology", "Radiology"],
-            index=["home", "diabetes", "radiology"].index(st.session_state['page'])
+            ["Home", "Endocrinology", "Radiology", "Neurology"],
+            index=["home", "diabetes", "radiology", "brain_tumor"].index(st.session_state['page'])
         )
 
         # Update state if changed via Sidebar
@@ -204,6 +302,9 @@ def main():
         elif page_selection == "Radiology" and st.session_state['page'] != 'radiology':
             st.session_state['page'] = 'radiology'
             st.rerun()
+        elif page_selection == "Neurology" and st.session_state['page'] != 'brain_tumor':
+            st.session_state['page'] = 'brain_tumor'
+            st.rerun()
             
         st.divider()
         st.caption("v1.0.0 | NeuroDiagnose AI")
@@ -215,6 +316,8 @@ def main():
         page_diabetes()
     elif st.session_state['page'] == 'radiology':
         page_radiology()
+    elif st.session_state['page'] == 'brain_tumor':
+        page_brain_tumor()
 
 if __name__ == "__main__":
     main()
