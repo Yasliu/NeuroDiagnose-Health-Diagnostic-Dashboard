@@ -42,28 +42,6 @@
 * **Image Processing:** PIL (Python Imaging Library), NumPy
 * **Version Control:** Git & GitHub
 
----
-
-## 💻 Installation & Local Usage
-
-1.  **Clone the repository:**
-    ```bash
-    git clone [https://github.com/YourUsername/NeuroDiagnose.git](https://github.com/YourUsername/NeuroDiagnose.git)
-    cd NeuroDiagnose
-    ```
-
-2.  **Install dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    ```
-
-3.  **Run the application:**
-    ```bash
-    streamlit run app.py
-    ```
-
----
-
 ## ⚠️ Disclaimer
 **This project is for educational and research purposes only.**
 The models deployed in this application are prototypes and should **NOT** be used for real medical diagnosis. Always consult a certified medical professional for health concerns.
